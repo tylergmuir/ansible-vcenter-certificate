@@ -4,6 +4,11 @@
   gather_facts: false
   connection: local
   tasks:
+    - name: Install required python module
+      ansible.builtin.pip:
+        name: cryptography
+        version: ">=1.6"
+
     - name: Get vcenter certificate
       community.crypto.get_certificate:
         host: "https://{{ inventory_hostname }}"
