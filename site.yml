@@ -1,0 +1,72 @@
+---
+- name: Replace certificate for vcenter appliance
+  hosts: all
+  gather_facts: false
+  connection: local
+  tasks:
+    - name: Get vcenter certificate
+      community.crypto.get_certificate:
+        host: "https://{{ inventory_hostname }}"
+        port: 443
+      register: web_cert
+
+    - name: Calculate days to expiration
+      ansible.builtin.set_fact:
+        expire_days: "{{ ((web_cert.not_after | to_datetime('%Y%m%d%H%M%SZ')) - (ansible_date_time.iso8601 | to_datetime('%Y-%m-%dT%H:%M:%SZ'))).days }}"
+        vcenter_root: /etc/pki/tls/vcenter-root.pem
+        hostname: "{{ inventory_hostname.split('.')[0] }}"
+        intermediate_cert: "/etc/pki/tls/{{ hostname }}-intermediate.crt"
+
+    - name: Generate a new certificate
+      ansible.builtin.include_role:
+        name: letsencrypt-cloudflare
+      vars:
+        cert_name: "{{ hostname }}"
+        common_name: "{{ inventory_hostname }}"
+        subject_alt_name: ["{{ inventory_hostname }}"]
+        dns_zone: "{{ inventory_hostname | replace(hostname, '') }}"
+      when: expire_days < 7
+
+    - name: Get authentication token
+      ansible.builtin.uri:
+        url: "https://{{ inventory_hostname }}/rest/com/vmware/cis/session"
+        method: POST
+        url_username: "{{ vcenter_username }}"
+        url_password: "{{ vcenter_password }}"
+        validate_certs: false
+        force_basic_auth: true
+      register: session_cookie
+      when: expire_days < 7
+
+    - name: Download root cert
+      ansible.builtin.get_url:
+        url: https://letsencrypt.org/certs/isrgrootx1.pem
+        dest: "{{ vcenter_root }}"
+        mode: 0644
+      when: expire_days < 7
+
+    - name: Slurp private key
+      ansible.builtin.slurp:
+        src: "/etc/pki/tls/private/{{ hostname }}.pem"
+      register: private_key
+      when: expire_days < 7
+
+    - name: Upload vcenter cert
+      ansible.builtin.uri:
+        url: "https://{{ inventory_hostname }}/rest/vcenter/certificate-management/vcenter/tls"
+        method: PUT
+        validate_certs: false
+        headers:
+          vmware-api-session-id: "{{ session_cookie.cookies['vmware-api-session-id'] }}"
+          Content-Type: application/json
+        body_format: json
+        body: {
+          "spec": {
+            "root_cert": "{{ lookup('file', '/etc/pki/tls/' + hostname + '-intermediate.crt').split('\n\n')[0] + '\n' + lookup('file', vcenter_root) | trim }}",
+            "cert": "{{ lookup('file', '/etc/pki/tls/' + hostname + '.crt') | trim }}",
+            "key": "{{ private_key['content'] | b64decode | trim }}"
+          }
+        }
+      register: server_cert
+      changed_when: server_cert.status == 200
+      when: expire_days < 7

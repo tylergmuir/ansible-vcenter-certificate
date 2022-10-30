@@ -1,0 +1,5 @@
+mock_roles:
+  - letsencrypt-cloudflare
+mock_modules:
+  - community.crypto.x509_certificate_info
+  - community.crypto.get_certificate

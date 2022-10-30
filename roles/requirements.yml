@@ -1,0 +1,4 @@
+---
+- name: letsencrypt-cloudflare
+  src: https://github.com/tylergmuir/ansible-letsencrypt-cloudflare.git
+  scm: git
