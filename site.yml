@@ -7,7 +7,7 @@
     - name: Install required python module
       ansible.builtin.pip:
         name: cryptography
-        version: ">=1.6"
+        state: latest
 
     - name: Get vcenter certificate
       community.crypto.get_certificate:
