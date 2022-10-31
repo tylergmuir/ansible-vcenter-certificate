@@ -13,6 +13,7 @@
       community.crypto.get_certificate:
         host: "https://{{ inventory_hostname }}"
         port: 443
+        select_crypto_backend: cryptography
       register: web_cert
 
     - name: Calculate days to expiration
