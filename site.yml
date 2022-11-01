@@ -22,6 +22,7 @@
         cert_name: "{{ hostname }}"
         common_name: "{{ inventory_hostname }}"
         subject_alt_name: ["{{ inventory_hostname }}"]
+        dns_zone: "{{ inventory_hostname | replace(hostname + '.', '') }}"
         cert_path: /tmp
         key_path: /tmp
       when: expire_days | int < 7
