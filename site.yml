@@ -24,7 +24,7 @@
         common_name: "{{ inventory_hostname }}"
         subject_alt_name: ["{{ inventory_hostname }}"]
         dns_zone: "{{ inventory_hostname | replace(hostname, '') }}"
-      when: expire_days < 7
+      when: expire_days | int < 7
 
     - name: Get authentication token
       ansible.builtin.uri:
@@ -35,20 +35,20 @@
         validate_certs: false
         force_basic_auth: true
       register: session_cookie
-      when: expire_days < 7
+      when: expire_days | int < 7
 
     - name: Download root cert
       ansible.builtin.get_url:
         url: https://letsencrypt.org/certs/isrgrootx1.pem
         dest: "{{ vcenter_root }}"
         mode: 0644
-      when: expire_days < 7
+      when: expire_days | int < 7
 
     - name: Slurp private key
       ansible.builtin.slurp:
         src: "/etc/pki/tls/private/{{ hostname }}.pem"
       register: private_key
-      when: expire_days < 7
+      when: expire_days | int < 7
 
     - name: Upload vcenter cert
       ansible.builtin.uri:
@@ -68,4 +68,4 @@
         }
       register: server_cert
       changed_when: server_cert.status == 200
-      when: expire_days < 7
+      when: expire_days | int < 7
