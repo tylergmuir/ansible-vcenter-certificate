@@ -63,7 +63,7 @@
         body: {
           "spec": {
             "root_cert": "{{ lookup('file', '/tmp/' + hostname + '-intermediate.crt').split('\n\n')[0] + '\n' + lookup('file', '/tmp/vcenter-root.crt') | trim }}",
-            "cert": "{{ lookup('file', '/tmp' + hostname + '.crt') | trim }}",
+            "cert": "{{ lookup('file', '/tmp/' + hostname + '.crt') | trim }}",
             "key": "{{ private_key['content'] | b64decode | trim }}"
           }
         }
