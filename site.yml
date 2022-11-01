@@ -6,7 +6,8 @@
   tasks:
     - name: Get vcenter certificate
       community.crypto.get_certificate:
-        host: "https://{{ inventory_hostname }}"
+        # host: "https://{{ inventory_hostname }}"
+        host: google.com
         port: 443
         select_crypto_backend: cryptography
       register: web_cert
