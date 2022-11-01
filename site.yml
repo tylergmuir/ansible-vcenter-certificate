@@ -13,7 +13,6 @@
     - name: Calculate days to expiration
       ansible.builtin.set_fact:
         expire_days: "{{ ((web_cert.not_after | to_datetime('%Y%m%d%H%M%SZ')) - (ansible_date_time.iso8601 | to_datetime('%Y-%m-%dT%H:%M:%SZ'))).days }}"
-        vcenter_root: /etc/pki/tls/vcenter-root.pem
         hostname: "{{ inventory_hostname.split('.')[0] }}"
 
     - name: Generate a new certificate
@@ -24,6 +23,8 @@
         common_name: "{{ inventory_hostname }}"
         subject_alt_name: ["{{ inventory_hostname }}"]
         dns_zone: "{{ inventory_hostname | replace(hostname, '') }}"
+        cert_path: /tmp
+        key_path: /tmp
       when: expire_days | int < 7
 
     - name: Get authentication token
@@ -40,13 +41,13 @@
     - name: Download root cert
       ansible.builtin.get_url:
         url: https://letsencrypt.org/certs/isrgrootx1.pem
-        dest: "{{ vcenter_root }}"
+        dest: /tmp/vcenter-root.crt
         mode: 0644
       when: expire_days | int < 7
 
     - name: Slurp private key
       ansible.builtin.slurp:
-        src: "/etc/pki/tls/private/{{ hostname }}.pem"
+        src: "/tmp/{{ hostname }}.pem"
       register: private_key
       when: expire_days | int < 7
 
@@ -61,8 +62,8 @@
         body_format: json
         body: {
           "spec": {
-            "root_cert": "{{ lookup('file', '/etc/pki/tls/' + hostname + '-intermediate.crt').split('\n\n')[0] + '\n' + lookup('file', vcenter_root) | trim }}",
-            "cert": "{{ lookup('file', '/etc/pki/tls/' + hostname + '.crt') | trim }}",
+            "root_cert": "{{ lookup('file', '/tmp' + hostname + '-intermediate.crt').split('\n\n')[0] + '\n' + lookup('file', '/tmp/vcenter-root.crt') | trim }}",
+            "cert": "{{ lookup('file', '/tmp' + hostname + '.crt') | trim }}",
             "key": "{{ private_key['content'] | b64decode | trim }}"
           }
         }
