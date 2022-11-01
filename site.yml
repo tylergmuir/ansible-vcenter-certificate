@@ -15,7 +15,6 @@
         expire_days: "{{ ((web_cert.not_after | to_datetime('%Y%m%d%H%M%SZ')) - (ansible_date_time.iso8601 | to_datetime('%Y-%m-%dT%H:%M:%SZ'))).days }}"
         vcenter_root: /etc/pki/tls/vcenter-root.pem
         hostname: "{{ inventory_hostname.split('.')[0] }}"
-        intermediate_cert: "/etc/pki/tls/{{ hostname }}-intermediate.crt"
 
     - name: Generate a new certificate
       ansible.builtin.include_role:
