@@ -1,13 +1,11 @@
 ---
 - name: Replace certificate for vcenter appliance
   hosts: all
-  gather_facts: false
   connection: local
   tasks:
     - name: Get vcenter certificate
       community.crypto.get_certificate:
-        # host: "https://{{ inventory_hostname }}"
-        host: google.com
+        host: "{{ inventory_hostname }}"
         port: 443
         select_crypto_backend: cryptography
       register: web_cert
