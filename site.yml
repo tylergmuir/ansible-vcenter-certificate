@@ -51,6 +51,11 @@
       register: private_key
       when: expire_days | int < 7
 
+    - name: Collect certificate values
+      ansible.builtin.set_fact:
+        root_cert: "{{ lookup('file', '/tmp/vcenter-root.crt') }}"
+        int_cert: "{{ lookup('file', '/tmp/' + hostname + '-intermediate.crt').split('\n\n')[0] }}"
+
     - name: Upload vcenter cert
       ansible.builtin.uri:
         url: "https://{{ inventory_hostname }}/rest/vcenter/certificate-management/vcenter/tls"
@@ -62,7 +67,7 @@
         body_format: json
         body: {
           "spec": {
-            "root_cert": "{{ lookup('file', '/tmp/' + hostname + '-intermediate.crt').split('\n\n')[0] + '\n' + lookup('file', '/tmp/vcenter-root.crt') | trim }}",
+            "root_cert": "{{ int_cert + '\n' + root_cert | trim }}",
             "cert": "{{ lookup('file', '/tmp/' + hostname + '.crt') | trim }}",
             "key": "{{ private_key['content'] | b64decode | trim }}"
           }
