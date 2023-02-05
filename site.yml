@@ -55,6 +55,7 @@
       ansible.builtin.set_fact:
         root_cert: "{{ lookup('file', '/tmp/vcenter-root.crt') }}"
         int_cert: "{{ lookup('file', '/tmp/' + hostname + '-intermediate.crt').split('\n\n')[0] }}"
+      when: expire_days | int < 7
 
     - name: Upload vcenter cert
       ansible.builtin.uri:
